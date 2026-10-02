@@ -939,27 +939,41 @@ const menuFilter = String(styledMenu.props.style['--dsw-menu-backdrop-filter'])
 console.log('acrylic@20 -> fill ' + menuFill + ', filter ' + menuFilter)
 if (menuFilter.indexOf('blur') < 0) { failures += 1; console.log('FAIL  the acrylic preset must supply a backdrop blur') }
 
-/* The strength slider has to move both the density and the blur, otherwise it is a dead control. */
+/* Strength means "how much material", so raising it must thin the fill and deepen the blur. The
+ * first cut had it backwards: the fill thickened as the slider rose, so 0 looked like the strongest
+ * setting and 100 looked like "none". */
 appearanceHost.menuMaterialStrength = 90
 lookTree = renderSeat()
 const strongMenu = findAll(lookTree, function (node) { return node.props.className === 'dml-menu' })[0]
 const strongFill = String(strongMenu.props.style['--dsw-menu-surface-fill'])
 const strongFilter = String(strongMenu.props.style['--dsw-menu-backdrop-filter'])
 console.log('acrylic strength 20 -> 90 : fill ' + menuFill + ' -> ' + strongFill + ', filter ' + menuFilter + ' -> ' + strongFilter)
-if (!(alphaOf(strongFill) > alphaOf(menuFill))) { failures += 1; console.log('FAIL  raising the material strength must make the surface denser') }
+if (!(alphaOf(strongFill) < alphaOf(menuFill))) { failures += 1; console.log('FAIL  raising the material strength must let more through, not less') }
 if (strongFilter === menuFilter) { failures += 1; console.log('FAIL  raising the material strength must also deepen the blur') }
 
-/* Mica is the Windows 11 window material: dense and heavily blurred, not a pane you read through.
- * The previous numbers left it looking exactly like the default surface. */
+/* Mica sweeps the same way, over a wider range, so the slider is actually felt. */
 appearanceHost.menuMaterial = 'mica'
-appearanceHost.menuMaterialStrength = 50
+appearanceHost.menuMaterialStrength = 10
+lookTree = renderSeat()
+const weakMica = findAll(lookTree, function (node) { return node.props.className === 'dml-menu' })[0]
+const weakMicaFill = String(weakMica.props.style['--dsw-menu-surface-fill'])
+appearanceHost.menuMaterialStrength = 90
 lookTree = renderSeat()
 const micaMenu = findAll(lookTree, function (node) { return node.props.className === 'dml-menu' })[0]
 const micaFill = String(micaMenu.props.style['--dsw-menu-surface-fill'])
 const micaFilter = String(micaMenu.props.style['--dsw-menu-backdrop-filter'])
-console.log('mica -> fill ' + micaFill + ', filter ' + micaFilter)
-if (!(alphaOf(micaFill) >= 0.85)) { failures += 1; console.log('FAIL  mica must be markedly denser than the default surface') }
+console.log('mica strength 10 -> 90 : fill ' + weakMicaFill + ' -> ' + micaFill + ', filter ' + micaFilter)
+if (!(alphaOf(micaFill) < alphaOf(weakMicaFill))) { failures += 1; console.log('FAIL  raising the mica strength must let more through') }
+if (!(alphaOf(weakMicaFill) >= 0.9)) { failures += 1; console.log('FAIL  mica at low strength should be nearly solid') }
 if (micaFilter.indexOf('blur') < 0) { failures += 1; console.log('FAIL  mica must carry a large blur') }
+
+/* And zero must be the weakest setting, not the strongest: nearly solid, barely any blur. */
+appearanceHost.menuMaterial = 'acrylic'
+appearanceHost.menuMaterialStrength = 0
+lookTree = renderSeat()
+const zeroMenu = findAll(lookTree, function (node) { return node.props.className === 'dml-menu' })[0]
+console.log('acrylic at strength 0 -> fill ' + String(zeroMenu.props.style['--dsw-menu-surface-fill']) + ', filter ' + String(zeroMenu.props.style['--dsw-menu-backdrop-filter']))
+if (!(alphaOf(String(zeroMenu.props.style['--dsw-menu-surface-fill'])) >= 0.75)) { failures += 1; console.log('FAIL  strength 0 must be nearly solid, not the strongest setting') }
 
 /* "None" leaves the density to the opacity slider — the job the removed "transparent" preset had,
  * and the reason removing it costs nothing. */

@@ -89,23 +89,28 @@ window.__ModuleLoader__.load({
     /**
      * The surface recipe for a preset at a given strength (0-100).
      *
-     * Mica is the Windows 11 window material: a heavily blurred, near-opaque tint that only hints
-     * at what sits behind it, rather than a pane you read through. That means a large blur radius
-     * and a dense fill — which is exactly what the previous numbers were missing, leaving it
-     * looking like the default surface.
+     * Strength means how much *material* you get, not how dense the fill is: a stronger material
+     * lets more of what sits behind it show through, and blurs it harder. The first cut ran the
+     * other way — the fill thickened as the slider rose, so 0 looked like the strongest setting
+     * and 100 looked like "none". Hence the subtraction below.
+     *
+     * Mica is the Windows 11 window material: a heavily blurred tint that only hints at what is
+     * behind it. Large blur, thinning fill.
      */
     const materialRecipe = function (key, strength) {
       const amount = Math.max(0, Math.min(100, Number(strength))) / 100
       if (key === 'acrylic') {
         return {
-          fillOpacity: 22 + amount * 58,
+          /* 0 -> 80% (nearly solid, barely a material), 100 -> 22% (clearly frosted). */
+          fillOpacity: 80 - amount * 58,
           filter: 'blur(' + Math.round(10 + amount * 26) + 'px) saturate(' + Math.round(130 + amount * 90) + '%)',
         }
       }
       if (key === 'mica') {
         return {
-          fillOpacity: 84 + amount * 14,
-          filter: 'blur(' + Math.round(48 + amount * 52) + 'px) saturate(' + Math.round(120 + amount * 45) + '%)',
+          /* 0 -> 96% , 100 -> 62%: a much wider sweep than before, so the slider is felt. */
+          fillOpacity: 96 - amount * 34,
+          filter: 'blur(' + Math.round(40 + amount * 60) + 'px) saturate(' + Math.round(115 + amount * 50) + '%)',
         }
       }
       return { fillOpacity: null, filter: '' }
@@ -178,7 +183,9 @@ window.__ModuleLoader__.load({
      */
     const tintAt = function (hex, percent) {
       const rgb = channelsOf(hex)
-      const alpha = Math.max(0, Math.min(100, percent)) / 100
+      /* Rounded to two decimals: the raw quotient produced values like 0.27799999999999997, which
+       * then went straight into the CSS. */
+      const alpha = Number((Math.max(0, Math.min(100, percent)) / 100).toFixed(2))
       return 'rgb(' + rgb[0] + ' ' + rgb[1] + ' ' + rgb[2] + ' / ' + alpha + ')'
     }
 
@@ -1576,7 +1583,7 @@ window.__ModuleLoader__.load({
       setMenuOpacity: '背景不透明度',
       setMenuOpacityHint: '「无」时由它决定面板底色的通透程度，调到 0 就完全透明。',
       setMenuMaterialStrength: '材质强度',
-      setMenuMaterialStrengthHint: '材质的浓度：越高越不透明、模糊越重。',
+      setMenuMaterialStrengthHint: '材质强度：越高底色越透、模糊越重。',
       setMenuMaterialStrengthLocked: '先在上面选择「亚克力」或「云母」。',
       materialNone: '无',
       materialAcrylic: '亚克力',
@@ -1650,7 +1657,7 @@ window.__ModuleLoader__.load({
       setMenuOpacity: 'Background opacity',
       setMenuOpacityHint: 'Under "None" this decides how much of the fill shows; 0 is fully see-through.',
       setMenuMaterialStrength: 'Material strength',
-      setMenuMaterialStrengthHint: 'How dense the material is: higher means more opaque and a heavier blur.',
+      setMenuMaterialStrengthHint: 'How much material you get: higher lets more show through and blurs it harder.',
       setMenuMaterialStrengthLocked: 'Pick "Acrylic" or "Mica" above first.',
       materialNone: 'None',
       materialAcrylic: 'Acrylic',

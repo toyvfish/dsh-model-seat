@@ -117,7 +117,7 @@ git clone https://github.com/toyvfish/dsh-model-seat.git
 | `triggerEffortColor` | 跟随主题 | 推理等级字体色 |
 | `showSearch` | `true` | 面板顶部搜索框 |
 | `menuMaterial` | `none` | 面板材质：`none` / `acrylic` / `mica` |
-| `menuMaterialStrength` | `50` | 材质浓度（仅亚克力 / 云母可用） |
+| `menuMaterialStrength` | `50` | 材质强度（仅亚克力 / 云母可用）：越高底色越透、模糊越重 |
 | `menuTint` | `#343436` | 面板底色 |
 | `menuOpacity` | `100` | 面板底色不透明度（仅「无」可用；亚克力 / 云母自带固定浓度） |
 | `listLogo` / `listNote` | `true` | 列表里的图标 / 中文简介 |

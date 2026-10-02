@@ -65,7 +65,7 @@ pnpm add "file:../../path/to/dsh-model-seat"
 仓库里已经带了构建产物 `client.js`，克隆下来直接指向它就能用，无需构建：
 
 ```bash
-git clone https://github.com/GJ15901177165/dsh-model-seat.git
+git clone https://github.com/toyvfish/dsh-model-seat.git
 ```
 
 > ℹ️ 唯一的外部依赖是 peer `@deepseek-ai/schemastery`，它由 DSH 自己提供，不需要单独安装。

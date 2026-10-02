@@ -949,7 +949,18 @@ const strongFill = String(strongMenu.props.style['--dsw-menu-surface-fill'])
 const strongFilter = String(strongMenu.props.style['--dsw-menu-backdrop-filter'])
 console.log('acrylic strength 20 -> 90 : fill ' + menuFill + ' -> ' + strongFill + ', filter ' + menuFilter + ' -> ' + strongFilter)
 if (!(alphaOf(strongFill) < alphaOf(menuFill))) { failures += 1; console.log('FAIL  raising the material strength must let more through, not less') }
-if (strongFilter === menuFilter) { failures += 1; console.log('FAIL  raising the material strength must also deepen the blur') }
+/* Every term flips together. Fixing only the fill left the blur running the other way, so the top
+ * of the slider came out hazier than the old bottom ever was — the two ends have to swap wholesale. */
+const blurOf = function (value) {
+  const found = /blur\((\d+)px\)/.exec(value)
+  return found === null ? NaN : Number(found[1])
+}
+console.log('blur at strength 20 vs 90 -> ' + blurOf(menuFilter) + 'px vs ' + blurOf(strongFilter) + 'px')
+if (!(blurOf(strongFilter) < blurOf(menuFilter))) {
+  failures += 1
+  console.log('FAIL  the blur must thin as the strength rises, together with the fill')
+}
+if (strongFilter === menuFilter) { failures += 1; console.log('FAIL  the strength slider must change the filter at all') }
 
 /* Mica sweeps the same way, over a wider range, so the slider is actually felt. */
 appearanceHost.menuMaterial = 'mica'

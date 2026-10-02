@@ -131,28 +131,28 @@ window.__ModuleLoader__.load({
     /**
      * The surface recipe for a preset at a given strength (0-100).
      *
-     * Strength means how much *material* you get, not how dense the fill is: a stronger material
-     * lets more of what sits behind it show through, and blurs it harder. The first cut ran the
-     * other way — the fill thickened as the slider rose, so 0 looked like the strongest setting
-     * and 100 looked like "none". Hence the subtraction below.
+     * Strength means how much *material* you get, not how dense the fill is. The original numbers
+     * ran the other way, so the slider read inverted; every term is therefore subtracted from the
+     * old top end. All three have to flip together — flipping only the fill left the blur climbing
+     * the other way, and strength 100 came out hazier than the old 0 ever was.
      *
-     * Mica is the Windows 11 window material: a heavily blurred tint that only hints at what is
-     * behind it. Large blur, thinning fill.
+     * Consequence: strength 100 reproduces exactly what the old 0 looked like, and 0 what the old
+     * 100 did.
      */
     const materialRecipe = function (key, strength) {
       const amount = Math.max(0, Math.min(100, Number(strength))) / 100
       if (key === 'acrylic') {
         return {
-          /* 0 -> 80% (nearly solid, barely a material), 100 -> 22% (clearly frosted). */
+          /* 0 -> 80% fill / 36px blur (nearly solid, barely a material); 100 -> 22% / 10px. */
           fillOpacity: 80 - amount * 58,
-          filter: 'blur(' + Math.round(10 + amount * 26) + 'px) saturate(' + Math.round(130 + amount * 90) + '%)',
+          filter: 'blur(' + Math.round(36 - amount * 26) + 'px) saturate(' + Math.round(220 - amount * 90) + '%)',
         }
       }
       if (key === 'mica') {
         return {
-          /* 0 -> 96% , 100 -> 62%: a much wider sweep than before, so the slider is felt. */
-          fillOpacity: 96 - amount * 34,
-          filter: 'blur(' + Math.round(40 + amount * 60) + 'px) saturate(' + Math.round(115 + amount * 50) + '%)',
+          /* 0 -> 98% fill / 100px blur; 100 -> 84% / 48px. */
+          fillOpacity: 98 - amount * 14,
+          filter: 'blur(' + Math.round(100 - amount * 52) + 'px) saturate(' + Math.round(165 - amount * 45) + '%)',
         }
       }
       return { fillOpacity: null, filter: '' }

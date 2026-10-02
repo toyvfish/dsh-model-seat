@@ -1,0 +1,8 @@
+# Installed dependencies. The @deepseek-ai/schemastery entry is a junction into the
+# local DSH profile and must never be committed.
+node_modules/
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.log

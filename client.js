@@ -1791,7 +1791,10 @@ window.__ModuleLoader__.load({
       '.dml-trigger[aria-disabled="true"]:not(:disabled){cursor:progress}',
       '.dml-brand{display:block;flex:none;width:16px;height:16px;color:var(--dsw-alias-label-primary,#17191d)}',
       '.dml-trigger:disabled .dml-brand{color:currentColor}',
-      '.dml-tip-bubble{display:inline-flex;align-items:center;position:fixed;z-index:100;left:-9999px;top:-9999px;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,#3a3a3c);color:var(--dsw-static-neutral-bluish-00,#f5f6f8);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;opacity:0;transition:opacity .12s var(--ds-ease-in-out,ease)}',
+      /* The shell's popover layer sits at 1100 (both Menu and Tooltip use 1100 for their portal
+       * variants), so a bubble at 100 was painted underneath the panel. One above that; the bubble
+       * is only ever on screen while hovering, so it cannot obstruct anything else. */
+      '.dml-tip-bubble{display:inline-flex;align-items:center;position:fixed;z-index:1101;left:-9999px;top:-9999px;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,#3a3a3c);color:var(--dsw-static-neutral-bluish-00,#f5f6f8);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;opacity:0;transition:opacity .12s var(--ds-ease-in-out,ease)}',
       '.dml-tip-bubble[data-show="true"]{opacity:1}',
       '.dml-tip-bubble[data-side="top"]{transform:translate(-50%,-100%)}',
       '@media (prefers-reduced-motion:reduce){.dml-tip-bubble{transition:none}}',

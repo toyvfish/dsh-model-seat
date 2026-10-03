@@ -628,6 +628,12 @@ const seatTree = renderSeat()
 const seatTrigger = findAll(seatTree, function (node) { return node.props.className === 'dml-trigger' })[0]
 const seatTip = typeof seatTrigger.props.onMouseEnter === 'function'
 const seatNativeTitle = String(seatTrigger.props.title)
+/* The bubble must outrank the shell's 1100 popover layer, or the panel paints over it — which is
+ * exactly what a bubble at 100 did. */
+const tipZ = /\.dml-tip-bubble\{[^}]*z-index:(\d+)/.exec(source)
+const tipZValue = tipZ === null ? 0 : Number(tipZ[1])
+console.log('tooltip z-index -> ' + tipZValue + ' (popover layer is 1100)')
+if (!(tipZValue > 1100)) { failures += 1; console.log('FAIL  the tooltip must sit above the popover layer') }
 console.log('trigger tooltip -> handler ' + seatTip + ', native title ' + JSON.stringify(seatNativeTitle))
 if (seatTip !== true) { failures += 1; console.log('FAIL  the trigger must show the bubble on hover') }
 if (seatNativeTitle !== 'undefined') { failures += 1; console.log('FAIL  the trigger must not keep a native title, or two bubbles appear') }

@@ -613,13 +613,25 @@ for (const entry of noteCases) {
   const row = rows.filter(function (candidate) { return textOf(candidate).indexOf(entry[1]) >= 0 })[0]
   const noteNode = row === undefined ? undefined : findAll([row], function (node) { return node.props.className === 'dml-option-note' })[0]
   const text = noteNode === undefined ? '' : textOf(noteNode)
-  const hover = noteNode === undefined ? '' : String(noteNode.props.title)
-  const rowHover = row === undefined ? '' : String(row.props.title)
-  const ok = text === entry[2] && hover === entry[2] && rowHover.indexOf(entry[2]) >= 0
+  /* The hint is a hand-rolled bubble now, not a native title: it has to be a real handler on the
+   * row, and no native title may linger or the browser would show a second bubble of its own. */
+  const rowTip = row === undefined ? false : typeof row.props.onMouseEnter === 'function'
+  const rowTipHides = row === undefined ? false : typeof row.props.onMouseLeave === 'function'
+  const nativeTitle = (row === undefined ? '' : String(row.props.title)) + (noteNode === undefined ? '' : String(noteNode.props.title))
+  const ok = text === entry[2] && rowTip === true && rowTipHides === true && nativeTitle === 'undefinedundefined'
   if (!ok) failures += 1
   console.log((ok ? 'ok  ' : 'FAIL') + '  ' + entry[0] + '/' + entry[1] + ' -> ' + JSON.stringify(text) + (ok ? '' : ' (expected ' + JSON.stringify(entry[2]) + ')'))
   if (allText(tree).indexOf('English host copy') >= 0) englishLeak = true
 }
+/* The seat's hint hangs above it, driven by the same bubble. */
+const seatTree = renderSeat()
+const seatTrigger = findAll(seatTree, function (node) { return node.props.className === 'dml-trigger' })[0]
+const seatTip = typeof seatTrigger.props.onMouseEnter === 'function'
+const seatNativeTitle = String(seatTrigger.props.title)
+console.log('trigger tooltip -> handler ' + seatTip + ', native title ' + JSON.stringify(seatNativeTitle))
+if (seatTip !== true) { failures += 1; console.log('FAIL  the trigger must show the bubble on hover') }
+if (seatNativeTitle !== 'undefined') { failures += 1; console.log('FAIL  the trigger must not keep a native title, or two bubbles appear') }
+
 const englishRejected = !englishLeak
 console.log('english host copy replaced: ' + englishRejected)
 if (!englishRejected) { failures += 1; console.log('FAIL  english host copy must not survive into the list') }

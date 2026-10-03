@@ -167,6 +167,56 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * The shell's own tooltip is a fixed-position bubble inside its private layer, so it cannot be
+     * borrowed. This mirrors its look — same tokens, same padding, same enter timing — on a shared
+     * element appended to <body>. Living outside the tree also means neither the composer card nor
+     * the popover can clip it.
+     */
+    const TIP_CLASS = 'dml-tip-bubble'
+    let tipNode = null
+
+    const tipBubble = function () {
+      if (typeof document === 'undefined' || document === null || document.body === null || document.body === undefined) return null
+      if (tipNode !== null && tipNode.isConnected === true) return tipNode
+      tipNode = document.createElement('div')
+      tipNode.className = TIP_CLASS
+      tipNode.setAttribute('role', 'tooltip')
+      document.body.appendChild(tipNode)
+      return tipNode
+    }
+
+    /** Show `text` centred above the anchor — the seat's hint sits over the seat. */
+    const showTipAbove = function (text, anchor) {
+      const node = tipBubble()
+      if (node === null || anchor === null || anchor === undefined || typeof anchor.getBoundingClientRect !== 'function') return
+      const rect = anchor.getBoundingClientRect()
+      node.textContent = text
+      node.dataset.side = 'top'
+      node.style.left = (rect.left + rect.width / 2) + 'px'
+      node.style.top = (rect.top - 8) + 'px'
+      node.dataset.show = 'true'
+    }
+
+    /**
+     * Show `text` beside the pointer. List rows are not required to anchor the bubble above, and
+     * following the cursor keeps a long note clear of the row it describes.
+     */
+    const showTipAtPointer = function (text, clientX, clientY) {
+      const node = tipBubble()
+      if (node === null) return
+      node.textContent = text
+      node.dataset.side = 'cursor'
+      node.style.left = (clientX + 14) + 'px'
+      node.style.top = (clientY + 18) + 'px'
+      node.dataset.show = 'true'
+    }
+
+    const hideTip = function () {
+      if (tipNode === null) return
+      tipNode.dataset.show = 'false'
+    }
+
     /** '#rrggbb' -> [r, g, b]. */
     const channelsOf = function (hex) {
       const value = parseInt(hex.slice(1), 16)
@@ -1344,9 +1394,10 @@ window.__ModuleLoader__.load({
             'aria-selected': selected,
             'data-dml-item': 'true',
             className: 'dml-option',
-            /* The note is clamped to one line, so hovering anywhere on the row (and on the
-             * note itself) echoes it in full. */
-            title: name + '\n' + note,
+            /* The note is clamped to one line, so hovering the row echoes it in full. Same bubble
+             * as the seat's, but it tracks the pointer rather than sitting above the row. */
+            onMouseEnter: function (event) { showTipAtPointer(name + '\n' + note, event.clientX, event.clientY) },
+            onMouseLeave: hideTip,
             /* Deliberately NOT the native `disabled`: a commit only lasts a beat, but the UA
              * styling for a disabled button greys out the mark and the name for that instant.
              * Interaction is gated in the handler instead, so the row never changes its looks. */
@@ -1356,7 +1407,7 @@ window.__ModuleLoader__.load({
             look.listLogo ? h(BrandMark, { key: 'mark', provider: group.id, model: model.id, className: 'dml-option-brand' }) : null,
             h('span', { key: 'copy', className: 'dml-option-copy' }, [
               h('span', { key: 'name', className: 'dml-option-name' }, name),
-              look.listNote ? h('span', { key: 'note', className: 'dml-option-note', title: note }, note) : null,
+              look.listNote ? h('span', { key: 'note', className: 'dml-option-note' }, note) : null,
             ]),
             selected ? h('span', { key: 'check', className: 'dml-option-slot' }, h(CheckMark, {})) : h('span', { key: 'check', className: 'dml-option-slot' }),
           ]))
@@ -1508,7 +1559,11 @@ window.__ModuleLoader__.load({
           'aria-label': ariaLabel,
           'aria-haspopup': 'dialog',
           'aria-expanded': open,
-          title: ariaLabel,
+          /* The hint belongs over the seat, as the shell's own hints do. */
+          onMouseEnter: function (event) { showTipAbove(ariaLabel, event.currentTarget) },
+          onMouseLeave: hideTip,
+          onFocus: function (event) { showTipAbove(ariaLabel, event.currentTarget) },
+          onBlur: hideTip,
           /* A held session really disables the trigger; a settling commit only gates it. */
           disabled: props.locked === true,
           'aria-disabled': busyNow,
@@ -1694,6 +1749,10 @@ window.__ModuleLoader__.load({
       '.dml-trigger[aria-disabled="true"]:not(:disabled){cursor:progress}',
       '.dml-brand{display:block;flex:none;width:16px;height:16px;color:var(--dsw-alias-label-primary,#17191d)}',
       '.dml-trigger:disabled .dml-brand{color:currentColor}',
+      '.dml-tip-bubble{display:inline-flex;align-items:center;position:fixed;z-index:100;left:-9999px;top:-9999px;width:max-content;max-width:50vw;padding:3px 7px;border-radius:var(--dsw-radius-sm,6px);background:var(--dsw-alias-tooltip-bg,#3a3a3c);color:var(--dsw-static-neutral-bluish-00,#f5f6f8);font-size:13px;line-height:20px;white-space:pre-line;overflow-wrap:break-word;pointer-events:none;opacity:0;transition:opacity .12s var(--ds-ease-in-out,ease)}',
+      '.dml-tip-bubble[data-show="true"]{opacity:1}',
+      '.dml-tip-bubble[data-side="top"]{transform:translate(-50%,-100%)}',
+      '@media (prefers-reduced-motion:reduce){.dml-tip-bubble{transition:none}}',
       '.dml-trigger .dml-brand{color:var(--dml-trigger-logo,#fff)}',
       '.dml-trigger-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dml-trigger-label,inherit)}',
       '.dml-trigger-effort{flex:none;color:var(--dml-trigger-effort,var(--dsw-alias-label-caption,#8b93a1));font-size:12px}',

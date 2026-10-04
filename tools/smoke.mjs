@@ -461,6 +461,14 @@ if (source.indexOf(resetCss) < 0) { failures += 1; console.log('FAIL  restore de
 /* The popover belongs to the seat, so it hangs centred on it rather than off one edge. */
 const centreNeedle = 'rect.left + rect.width / 2 - width / 2'
 if (source.indexOf(centreNeedle) < 0) { failures += 1; console.log('FAIL  the popover must be centred on the trigger') }
+/* ...but it must not follow the seat's *width*. The seat is right-aligned, so a longer model name
+ * widens it leftwards and shifts its centre; re-centring on every state change would slide the panel
+ * sideways while the list is being read. It compares the anchor instead. */
+if (source.indexOf('const anchor = anchorRef.current') < 0
+  || source.indexOf('anchorRef.current = { right: rect.right, top: rect.top }') < 0) {
+  failures += 1
+  console.log('FAIL  the popover must anchor to the seat rather than re-centring on every state change')
+}
 const registration = seatRegistration
 
 function makeSnapshot(provider, modelId, effortId, description) {

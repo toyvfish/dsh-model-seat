@@ -1279,10 +1279,20 @@ window.__ModuleLoader__.load({
         return function () { document.removeEventListener('mousedown', onPointerDown, true) }
       }, [open, closeMenu])
 
+      /* The seat is right-aligned in the composer, so choosing a longer model name widens it to the
+       * left: its centre shifts even though the seat never moved, and a panel that re-centres on
+       * every state change slides sideways while the list is being read. The anchor is compared
+       * rather than re-measured, so only a genuine move (scroll, resize, layout change) re-centres
+       * it — the first open still lands centred. */
+      const anchorRef = React.useRef(null)
+      const leftRef = React.useRef(null)
+
       React.useLayoutEffect(function () {
         if (!open) {
           setPos(null)
           setPanelHeight(0)
+          anchorRef.current = null
+          leftRef.current = null
           return undefined
         }
         const place = function () {
@@ -1300,12 +1310,20 @@ window.__ModuleLoader__.load({
           const gap = 8
           const maxLeft = Math.max(margin, window.innerWidth - width - margin)
           const maxTop = Math.max(margin, window.innerHeight - height - margin)
-          /* Centred on the trigger: the seat is what the panel belongs to, so aligning to its
-           * right edge left the panel visibly hanging off to one side. */
-          const left = clamp(rect.left + rect.width / 2 - width / 2, margin, maxLeft)
+          /* Right edge plus top identify the anchor: the seat is right-aligned, so a wider model
+           * name moves only its left edge and must not drag the panel along. */
+          const anchor = anchorRef.current
+          const moved = anchor === null
+            || Math.abs(rect.right - anchor.right) > 0.5
+            || Math.abs(rect.top - anchor.top) > 0.5
+          const centred = moved || leftRef.current === null
+            ? clamp(rect.left + rect.width / 2 - width / 2, margin, maxLeft)
+            : leftRef.current
+          leftRef.current = centred
+          anchorRef.current = { right: rect.right, top: rect.top }
           let top = rect.top - gap - height
           if (top < margin) top = rect.bottom + gap
-          setPos({ left: left, top: clamp(top, margin, maxTop) })
+          setPos({ left: clamp(centred, margin, maxLeft), top: clamp(top, margin, maxTop) })
         }
         place()
         window.addEventListener('scroll', place, true)

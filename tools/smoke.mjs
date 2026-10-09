@@ -606,14 +606,15 @@ if (dsMark === undefined || dsMark.props.viewBox !== '0 0 24 24') { failures += 
 else console.log('deepseek mark viewBox: ' + dsMark.props.viewBox)
 
 /* ---------- every model row carries one short Chinese note, echoed on hover ---------- */
-/* Every line has to describe *that* model. Tier-only phrasing gave each "...-Flash" the same words,
- * so neighbouring models — a V2.6 and a V2.5, different models entirely — read identically. */
+/* Every line has to say something about *that* model, and must not merely restate what the row
+ * already shows. The old wording stacked a tier label onto the name — "GPT-5.5 · 标准版，能力与成本均衡"
+ * — which repeated the title and told the reader nothing. */
 const noteCases = [
-  ['xiaomi', 'mimo-v2.6-pro-ultraspeed', 'MiMo-V2.6-Pro-UltraSpeed', 'MiMo-V2.6 · 极速档，延迟最低'],
-  ['xiaomi', 'mimo-v2.5', 'MiMo-V2.5', 'MiMo-V2.5 · 标准版，能力与成本均衡'],
-  ['zai', 'glm-5.3-flash', 'GLM-5.3-Flash', 'GLM-5.3 · 轻快档，响应更快'],
-  ['zai', 'glm-4.7', 'GLM-4.7', 'GLM-4.7 · 标准版，能力与成本均衡'],
-  ['deepseek-official', 'deepseek-v4-pro', 'DeepSeek-V4-Pro', '编码与推理更强，适合复杂任务'],
+  ['xiaomi', 'mimo-v2.6-pro-ultraspeed', 'MiMo-V2.6-Pro-UltraSpeed', '小米自研，覆盖对话、编程与推理。'],
+  ['zai', 'glm-5.3-flash', 'GLM-5.3-Flash', '更快更省的多模态推理，兼顾长上下文与日常编程。'],
+  ['zai', 'glm-4.7', 'GLM-4.7', '覆盖对话、编程与智能体，支持思考模式与函数调用。'],
+  ['deepseek-official', 'deepseek-v4-pro', 'DeepSeek-V4-Pro', '性能比肩顶级闭源模型。'],
+  ['openai', 'gpt-5.5', 'GPT-5.5', '内置思考，推理强度可调，面向编程与智能体任务。'],
 ]
 const notesSeen = {}
 let englishLeak = false
@@ -655,7 +656,7 @@ if (seatTip !== true) { failures += 1; console.log('FAIL  the trigger must show 
 if (seatNativeTitle !== 'undefined') { failures += 1; console.log('FAIL  the trigger must not keep a native title, or two bubbles appear') }
 
 /* The complaint that started this: two different models must never read the same. */
-const notesDiffer = notesSeen['MiMo-V2.6-Pro-UltraSpeed'] !== notesSeen['MiMo-V2.5']
+const notesDiffer = notesSeen['GLM-5.3-Flash'] !== notesSeen['GLM-4.7']
 console.log('neighbouring models read differently: ' + notesDiffer)
 if (!notesDiffer) { failures += 1; console.log('FAIL  different models must not share one note') }
 

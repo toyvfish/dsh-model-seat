@@ -339,61 +339,73 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One short Chinese line per model row.
+     * The line under each model name.
      *
-     * The Host ships copy only for its own models, and most third-party providers arrive bare, so the
-     * note is assembled: an exact override first, then a Chinese description the user wrote, then a
-     * phrase built from the model's own family name plus its tier token.
+     * Shaped after how dsh-claude-style does its model copy: the text describes a *product line*, not
+     * a version, so a retired model and its successor read alike — and the rules are ordered, exact id
+     * then a vendor-anchored family then a tier, because an unanchored /flash/ would hand DeepSeek's
+     * line copy to every other vendor's Flash tier.
      *
-     * The family name is what makes the line specific to the model. Keying on the tier alone gave
-     * every "...-Flash" the same words, so a V2.5 and a V2.6 — different models with different
-     * capabilities — read identically.
+     * Two things the previous wording got wrong and this one keeps out: the line must not repeat the
+     * model's own name (it is already the row title), and it must not invent a tier label like
+     * "旗舰档：" — the name already says which tier it is. The line says what the model is *for*.
      */
     const MODEL_NOTES = {
-      'deepseek-v4-flash': '快速经济，适合常规与并行任务',
-      'deepseek-v4-pro': '编码与推理更强，适合复杂任务',
-      'deepseek-chat': '通用对话，适合日常问答与写作',
-      'deepseek-reasoner': '深度推理，擅长数学与代码',
+      'deepseek-v4-flash': '非对称模型结构，小成本大智能。',
+      'deepseek-v4-pro': '性能比肩顶级闭源模型。',
+      'deepseek-chat': '通用对话，适合日常问答与写作。',
+      'deepseek-reasoner': '深度推理，擅长数学与代码。',
     }
 
-    /** Tier token -> phrase, most specific first. */
+    /** Vendor-anchored family copy. Ordered — the first match wins, so specific lines go first. */
+    const FAMILY_NOTES = [
+      [/deepseek[^ ]*flash/, '非对称模型结构，小成本大智能。'],
+      [/deepseek/, '更强、更快、更普惠。'],
+      [/claude[^ ]*opus/, '面向复杂编程与智能体的混合推理模型。'],
+      [/claude[^ ]*sonnet/, '面向实时智能体与高吞吐的混合推理模型。'],
+      [/claude[^ ]*haiku/, '面向速度敏感的高吞吐场景，响应快、成本低。'],
+      [/claude/, '面向编程与知识工作的通用模型。'],
+      [/gpt-oss|oss-\d/, '开放权重的推理模型，可自行部署。'],
+      [/gpt-?[5-9]/, '内置思考，推理强度可调，面向编程与智能体任务。'],
+      [/(^|[/\s-])o[1-9](-|$|\s)/, '作答前深入思考，擅长数学、科学与编程。'],
+      [/gpt/, '支持文本与图像输入，覆盖多语言。'],
+      [/gemini[^ ]*(pro|ultra)/, '面向复杂任务、深度推理与多模态理解。'],
+      [/gemini[^ ]*flash/, '速度与成本优先，面向高频低延迟场景。'],
+      [/gemini|gemma/, '原生理解文本、图像、视频与音频。'],
+      [/glm[^ ]*flash/, '更快更省的多模态推理，兼顾长上下文与日常编程。'],
+      [/glm/, '覆盖对话、编程与智能体，支持思考模式与函数调用。'],
+      [/kimi/, '原生支持文本、图像与视频输入，含思考模式与工具调用。'],
+      [/qwen[^ ]*(coder|code)/, '开放权重，面向补全、生成与仓库级修改。'],
+      [/qwen[^ ]*(flash|turbo)/, '响应快、成本低，工具调用与长上下文支持完整。'],
+      [/qwen[^ ]*(max|plus)/, '能力与成本均衡，工具调用支持完整。'],
+      [/qwen/, '开放权重与云端 API 并行，覆盖文本、图像与多媒体。'],
+      [/minimax/, '主打智能体推理、工具调用、编程与多模态输入。'],
+      [/grok/, '覆盖编程、智能体与知识工作，支持多模态输入。'],
+      [/doubao|seed-?\d|volc/, '面向通用任务与代码，支持多模态输入。'],
+      [/mimo/, '小米自研，覆盖对话、编程与推理。'],
+      [/mistral|codestral|magistral/, '开放权重与商用并行，可 API 调用或自托管。'],
+      [/llama/, '可自由微调、蒸馏并部署到任何环境。'],
+      [/hunyuan|(^|[/\s-])hy\d/, '中文理解与智能体场景表现均衡。'],
+      [/ernie/, '知识增强，支持中文理解与多模态生成。'],
+      [/step/, '覆盖文本推理、多模态与语音。'],
+    ]
+
+    /**
+     * Tier copy, tried only when no family claims the model. It says what the tier is *for*; the old
+     * table labelled the tier itself ("极速档", "旗舰档"), which repeated the name and added nothing.
+     */
     const TIER_NOTES = [
-      ['ultraspeed', '极速档，延迟最低'],
-      ['highspeed', '高速档，吞吐优先'],
-      ['flash', '轻快档，响应更快'],
-      ['turbo', '加速档，速度优先'],
-      ['mini', '轻量档，体积小、成本低'],
-      ['lite', '轻量档，体积小、成本低'],
-      ['vision', '视觉版，可读图与视频'],
-      ['reasoner', '推理版，擅长数学与代码'],
-      ['chat', '对话版，适合问答与写作'],
-      ['max', '旗舰档，能力上限最高'],
-      ['pro', '增强档，适合复杂任务'],
-      ['plus', '增强档，适合复杂任务'],
+      [/(ultraspeed|highspeed|instant|swift|turbo|flash|mini|lite|nano|air|small|fast)/, '响应快、成本低，适合简单或高频的任务。'],
+      [/(pro|max|ultra|thinking|reasoner|plus|large|advanced|heavy|frontier)/, '适合复杂或质量优先的任务，成本更高。'],
+      [/vision/, '支持图像与视频输入。'],
+      [/coder|code/, '面向代码补全、生成与仓库级修改。'],
     ]
 
-    /** Tier tokens, lower-cased: stripped off a display name to leave the family behind. */
-    const TIER_TOKENS = [
-      'ultraspeed', 'highspeed', 'flash', 'turbo', 'mini', 'lite', 'vision', 'reasoner', 'chat',
-      'max', 'pro', 'plus', 'instruct', 'base', 'preview',
-    ]
-
-    /** Neutral line for a model whose name carries no recognisable tier. */
-    const DEFAULT_NOTE = '标准版，能力与成本均衡'
+    /** Last resort, for a name that says nothing about the model at all. */
+    const DEFAULT_NOTE = '适合日常通用任务。'
 
     const hasHan = function (value) {
       return /[\u3400-\u9fff]/.test(value)
-    }
-
-    /** "MiMo-V2.6-Pro-UltraSpeed" -> "MiMo-V2.6": the display name minus its tier tokens. */
-    const familyOf = function (model) {
-      const raw = model !== undefined && typeof model.name === 'string' && model.name !== ''
-        ? model.name
-        : String(model === undefined || model.id === undefined ? '' : model.id)
-      const kept = raw.split(/[\s_-]+/).filter(function (part) {
-        return part !== '' && TIER_TOKENS.indexOf(part.toLowerCase()) < 0
-      })
-      return kept.join('-')
     }
 
     /** Resolve the short Chinese line shown under one model name. */
@@ -403,16 +415,15 @@ window.__ModuleLoader__.load({
       if (exact !== undefined) return exact
       const host = model.description
       if (typeof host === 'string' && host !== '' && hasHan(host)) return host
-      const name = String(model === undefined || model.name === undefined ? '' : model.name).toLowerCase()
-      const tokens = (id + ' ' + name).split(/[^a-z0-9]+/)
-      const family = familyOf(model)
-      for (let index = 0; index < TIER_NOTES.length; index += 1) {
-        if (tokens.indexOf(TIER_NOTES[index][0]) >= 0) {
-          const phrase = TIER_NOTES[index][1]
-          return family === '' ? phrase : family + ' · ' + phrase
-        }
+      const name = String(model === undefined || model.name === undefined ? '' : model.name)
+      const haystack = (id + ' ' + name.toLowerCase()).replace(/\s+/g, ' ')
+      for (let index = 0; index < FAMILY_NOTES.length; index += 1) {
+        if (FAMILY_NOTES[index][0].test(haystack)) return FAMILY_NOTES[index][1]
       }
-      return family === '' ? DEFAULT_NOTE : family + ' · ' + DEFAULT_NOTE
+      for (let index = 0; index < TIER_NOTES.length; index += 1) {
+        if (TIER_NOTES[index][0].test(haystack)) return TIER_NOTES[index][1]
+      }
+      return DEFAULT_NOTE
     }
 
     /**

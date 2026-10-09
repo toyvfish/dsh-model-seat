@@ -381,10 +381,15 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * One short Chinese line per model row. The Host only ships copy for its own two
-     * DeepSeek models (and in English), while every third-party provider arrives bare, so
-     * the list reads its own note: an exact override first, a Chinese description the user
-     * wrote themselves next, then a role phrase derived from the id suffix.
+     * One short Chinese line per model row.
+     *
+     * The Host ships copy only for its own models, and most third-party providers arrive bare, so the
+     * note is assembled: an exact override first, then a Chinese description the user wrote, then a
+     * phrase built from the model's own family name plus its tier token.
+     *
+     * The family name is what makes the line specific to the model. Keying on the tier alone gave
+     * every "...-Flash" the same words, so a V2.5 and a V2.6 — different models with different
+     * capabilities — read identically.
      */
     const MODEL_NOTES = {
       'deepseek-v4-flash': '快速经济，适合常规与并行任务',
@@ -393,24 +398,44 @@ window.__ModuleLoader__.load({
       'deepseek-reasoner': '深度推理，擅长数学与代码',
     }
 
-    /** id token -> role phrase, most specific first. */
-    const ROLE_NOTES = [
-      ['ultraspeed', '极速版，延迟最低，适合交互密集'],
-      ['highspeed', '高速版，吞吐优先，适合高并发'],
-      ['flash', '轻快版，响应更快，适合日常批量'],
-      ['turbo', '加速版，为速度优化，兼顾能力'],
-      ['mini', '轻量版，体积小、成本低'],
-      ['lite', '轻量版，体积小、成本低'],
-      ['max', '旗舰版，能力上限最高'],
-      ['pro', '增强版，能力更强，适合复杂任务'],
-      ['plus', '增强版，能力更强，适合复杂任务'],
+    /** Tier token -> phrase, most specific first. */
+    const TIER_NOTES = [
+      ['ultraspeed', '极速档，延迟最低'],
+      ['highspeed', '高速档，吞吐优先'],
+      ['flash', '轻快档，响应更快'],
+      ['turbo', '加速档，速度优先'],
+      ['mini', '轻量档，体积小、成本低'],
+      ['lite', '轻量档，体积小、成本低'],
+      ['vision', '视觉版，可读图与视频'],
+      ['reasoner', '推理版，擅长数学与代码'],
+      ['chat', '对话版，适合问答与写作'],
+      ['max', '旗舰档，能力上限最高'],
+      ['pro', '增强档，适合复杂任务'],
+      ['plus', '增强档，适合复杂任务'],
     ]
 
-    /** Neutral line for a model whose id carries no role suffix. */
+    /** Tier tokens, lower-cased: stripped off a display name to leave the family behind. */
+    const TIER_TOKENS = [
+      'ultraspeed', 'highspeed', 'flash', 'turbo', 'mini', 'lite', 'vision', 'reasoner', 'chat',
+      'max', 'pro', 'plus', 'instruct', 'base', 'preview',
+    ]
+
+    /** Neutral line for a model whose name carries no recognisable tier. */
     const DEFAULT_NOTE = '标准版，能力与成本均衡'
 
     const hasHan = function (value) {
       return /[\u3400-\u9fff]/.test(value)
+    }
+
+    /** "MiMo-V2.6-Pro-UltraSpeed" -> "MiMo-V2.6": the display name minus its tier tokens. */
+    const familyOf = function (model) {
+      const raw = model !== undefined && typeof model.name === 'string' && model.name !== ''
+        ? model.name
+        : String(model === undefined || model.id === undefined ? '' : model.id)
+      const kept = raw.split(/[\s_-]+/).filter(function (part) {
+        return part !== '' && TIER_TOKENS.indexOf(part.toLowerCase()) < 0
+      })
+      return kept.join('-')
     }
 
     /** Resolve the short Chinese line shown under one model name. */
@@ -420,11 +445,16 @@ window.__ModuleLoader__.load({
       if (exact !== undefined) return exact
       const host = model.description
       if (typeof host === 'string' && host !== '' && hasHan(host)) return host
-      const tokens = id.split(/[^a-z0-9]+/)
-      for (let index = 0; index < ROLE_NOTES.length; index += 1) {
-        if (tokens.indexOf(ROLE_NOTES[index][0]) >= 0) return ROLE_NOTES[index][1]
+      const name = String(model === undefined || model.name === undefined ? '' : model.name).toLowerCase()
+      const tokens = (id + ' ' + name).split(/[^a-z0-9]+/)
+      const family = familyOf(model)
+      for (let index = 0; index < TIER_NOTES.length; index += 1) {
+        if (tokens.indexOf(TIER_NOTES[index][0]) >= 0) {
+          const phrase = TIER_NOTES[index][1]
+          return family === '' ? phrase : family + ' · ' + phrase
+        }
       }
-      return DEFAULT_NOTE
+      return family === '' ? DEFAULT_NOTE : family + ' · ' + DEFAULT_NOTE
     }
 
     /**

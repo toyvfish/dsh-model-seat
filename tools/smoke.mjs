@@ -471,7 +471,7 @@ if (source.indexOf('const anchor = anchorRef.current') < 0
 }
 const registration = seatRegistration
 
-function makeSnapshot(provider, modelId, effortId, description) {
+function makeSnapshot(provider, modelId, effortId, description, displayName) {
   return {
     status: 'ready',
     error: null,
@@ -483,7 +483,9 @@ function makeSnapshot(provider, modelId, effortId, description) {
         name: provider,
         models: [{
           id: modelId,
-          name: modelId,
+          /* The Host sends a prettified display name, not the raw id — and the note builds the model's
+           * family out of it, so the stub has to supply one too. */
+          name: displayName === undefined ? modelId : displayName,
           ...(description === undefined ? {} : { description: description }),
           reasoning: {
             defaultEffort: 'medium',
@@ -604,21 +606,26 @@ if (dsMark === undefined || dsMark.props.viewBox !== '0 0 24 24') { failures += 
 else console.log('deepseek mark viewBox: ' + dsMark.props.viewBox)
 
 /* ---------- every model row carries one short Chinese note, echoed on hover ---------- */
+/* Every line has to describe *that* model. Tier-only phrasing gave each "...-Flash" the same words,
+ * so neighbouring models — a V2.6 and a V2.5, different models entirely — read identically. */
 const noteCases = [
-  ['xiaomi', 'mimo-v2.6-pro-ultraspeed', '极速版，延迟最低，适合交互密集'],
-  ['zai', 'glm-5.3-flash', '轻快版，响应更快，适合日常批量'],
-  ['zai', 'glm-4.7', '标准版，能力与成本均衡'],
-  ['deepseek-official', 'deepseek-v4-pro', '编码与推理更强，适合复杂任务'],
+  ['xiaomi', 'mimo-v2.6-pro-ultraspeed', 'MiMo-V2.6-Pro-UltraSpeed', 'MiMo-V2.6 · 极速档，延迟最低'],
+  ['xiaomi', 'mimo-v2.5', 'MiMo-V2.5', 'MiMo-V2.5 · 标准版，能力与成本均衡'],
+  ['zai', 'glm-5.3-flash', 'GLM-5.3-Flash', 'GLM-5.3 · 轻快档，响应更快'],
+  ['zai', 'glm-4.7', 'GLM-4.7', 'GLM-4.7 · 标准版，能力与成本均衡'],
+  ['deepseek-official', 'deepseek-v4-pro', 'DeepSeek-V4-Pro', '编码与推理更强，适合复杂任务'],
 ]
+const notesSeen = {}
 let englishLeak = false
 for (const entry of noteCases) {
-  snapshot = makeSnapshot(entry[0], entry[1], 'medium', 'English host copy that must not win')
+  snapshot = makeSnapshot(entry[0], entry[1], 'medium', 'English host copy that must not win', entry[2])
   records = new WeakMap()
   tree = renderSeat()
   findAll(tree, function (node) { return node.props.className === 'dml-trigger' })[0].props.onClick()
   tree = renderSeat()
   const rows = findAll(tree, function (node) { return node.props.className === 'dml-option' })
-  const row = rows.filter(function (candidate) { return textOf(candidate).indexOf(entry[1]) >= 0 })[0]
+  /* Case-insensitive: the row shows the display name, the case carries the raw id. */
+  const row = rows.filter(function (candidate) { return textOf(candidate).toLowerCase().indexOf(entry[1].toLowerCase()) >= 0 })[0]
   const noteNode = row === undefined ? undefined : findAll([row], function (node) { return node.props.className === 'dml-option-note' })[0]
   const text = noteNode === undefined ? '' : textOf(noteNode)
   /* The hint is a hand-rolled bubble now, not a native title: it has to be a real handler on the
@@ -626,9 +633,10 @@ for (const entry of noteCases) {
   const rowTip = row === undefined ? false : typeof row.props.onMouseEnter === 'function'
   const rowTipHides = row === undefined ? false : typeof row.props.onMouseLeave === 'function'
   const nativeTitle = (row === undefined ? '' : String(row.props.title)) + (noteNode === undefined ? '' : String(noteNode.props.title))
-  const ok = text === entry[2] && rowTip === true && rowTipHides === true && nativeTitle === 'undefinedundefined'
+  const ok = text === entry[3] && rowTip === true && rowTipHides === true && nativeTitle === 'undefinedundefined'
+  notesSeen[entry[2]] = text
   if (!ok) failures += 1
-  console.log((ok ? 'ok  ' : 'FAIL') + '  ' + entry[0] + '/' + entry[1] + ' -> ' + JSON.stringify(text) + (ok ? '' : ' (expected ' + JSON.stringify(entry[2]) + ')'))
+  console.log((ok ? 'ok  ' : 'FAIL') + '  ' + entry[0] + '/' + entry[1] + ' -> ' + JSON.stringify(text) + (ok ? '' : ' (expected ' + JSON.stringify(entry[3]) + ')'))
   if (allText(tree).indexOf('English host copy') >= 0) englishLeak = true
 }
 /* The seat's hint hangs above it, driven by the same bubble. */
@@ -645,6 +653,11 @@ if (!(tipZValue > 1100)) { failures += 1; console.log('FAIL  the tooltip must si
 console.log('trigger tooltip -> handler ' + seatTip + ', native title ' + JSON.stringify(seatNativeTitle))
 if (seatTip !== true) { failures += 1; console.log('FAIL  the trigger must show the bubble on hover') }
 if (seatNativeTitle !== 'undefined') { failures += 1; console.log('FAIL  the trigger must not keep a native title, or two bubbles appear') }
+
+/* The complaint that started this: two different models must never read the same. */
+const notesDiffer = notesSeen['MiMo-V2.6-Pro-UltraSpeed'] !== notesSeen['MiMo-V2.5']
+console.log('neighbouring models read differently: ' + notesDiffer)
+if (!notesDiffer) { failures += 1; console.log('FAIL  different models must not share one note') }
 
 const englishRejected = !englishLeak
 console.log('english host copy replaced: ' + englishRejected)

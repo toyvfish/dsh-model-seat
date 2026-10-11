@@ -14,7 +14,7 @@
 </div>
 
 <div align="center">
-  <img alt="模型席位：触发器" src="./docs/screenshots/trigger.png" width="470" />
+  <img alt="模型席位：触发器" src="./docs/screenshots/trigger.png" width="720" />
 </div>
 
 ## 📑 目录
@@ -77,7 +77,7 @@ git clone https://github.com/toyvfish/dsh-model-seat.git
 触发器上同时显示品牌图标、模型名和当前推理等级。背景色、不透明度、图标颜色、模型名字体色、推理等级字体色，都是独立可调的。
 
 <div align="center">
-  <img alt="模型席位：触发器" src="./docs/screenshots/trigger.png" width="470" />
+  <img alt="模型席位：触发器" src="./docs/screenshots/trigger.png" width="720" />
 </div>
 
 ### 弹出面板：分组、说明、搜索、滑条
@@ -85,7 +85,7 @@ git clone https://github.com/toyvfish/dsh-model-seat.git
 按提供方分组，每行带品牌图标和一句中文简介；顶部搜索框支持按模型名、说明、提供方过滤；底部是推理等级滑块。
 
 <div align="center">
-  <img alt="弹出面板" src="./docs/screenshots/panel.png" width="390" />
+  <img alt="弹出面板" src="./docs/screenshots/panel.png" width="349" />
 </div>
 
 
@@ -99,7 +99,7 @@ git clone https://github.com/toyvfish/dsh-model-seat.git
 | 推理等级滑块 | 启用渐变 · 单色 · 渐变起始色 / 结束色 |
 
 <div align="center">
-  <img alt="设置页" src="./docs/screenshots/settings.png" width="640" />
+  <img alt="设置页" src="./docs/screenshots/settings.png" width="588" />
 </div>
 
 

@@ -1,7 +1,6 @@
 {
   "name": "dsh-model-seat",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
   "description": "Composer model seat: brand marks, a grouped model list with notes, search, the reasoning-effort slider, and a configurable popover surface.",
   "exports": {
